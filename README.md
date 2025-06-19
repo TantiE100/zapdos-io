@@ -1,4 +1,4 @@
-# ⚡ Zapdos 
+# ⚡ Zapdos
 
 **Optimización Inteligente de Consumo Energético Diario**
 
@@ -8,8 +8,10 @@ Una aplicación web desarrollada con Streamlit para optimizar el uso de equipos 
 
 - 📊 **Análisis de datos horarios**: Procesa información de 24 horas de generación solar, tarifas y consumo base
 - ⚡ **Optimización matemática**: Utiliza programación lineal (PuLP) para encontrar el plan óptimo
-- 📈 **Reportes detallados**: Genera planes en Excel con formato profesional y códigos de colores
+- 📈 **Dashboard interactivo**: Visualizaciones en tiempo real con gráficos interactivos (Plotly)
+- 📋 **Reportes detallados**: Genera planes en Excel con formato profesional y códigos de colores
 - 🎨 **Interfaz moderna**: UI intuitiva con métricas en tiempo real y visualización clara
+- 💰 **Análisis de ahorro**: Calcula ahorro total, porcentajes y proyecciones mensuales/anuales
 - 💾 **Plantillas incluidas**: Archivos base para facilitar la entrada de datos
 - 📸 **Ejemplos visuales**: Imágenes de referencia de facturas y curvas de potencia para guiar al usuario
 
@@ -75,12 +77,18 @@ La aplicación se abrirá automáticamente en tu navegador en `http://localhost:
 - **Potencia contratada**: Límite máximo de la red en kW
 - **Horas mínimas**: Tiempo mínimo de funcionamiento requerido
 
-### Paso 3: Optimizar
+### Paso 3: Optimizar y Analizar
 
 1. Sube tu archivo de datos
 2. Configura los parámetros del equipo
 3. Haz clic en "🚀 Calcular plan óptimo"
-4. Descarga los resultados en Excel y CSV
+4. **Revisa el Dashboard de Optimización** que incluye:
+   - 💰 Métricas principales (ahorro, energía, costos)
+   - 📊 Gráficos interactivos del estado del equipo
+   - 📈 Progresión del ahorro a lo largo del día
+   - 💡 Recomendaciones inteligentes
+   - 📅 Proyecciones mensuales y anuales
+5. Descarga los resultados en Excel para uso posterior
 
 ## 📸 Imágenes de Referencia
 
@@ -166,12 +174,15 @@ gatherUsageStats = false
 
 La aplicación genera:
 
-1. **Resumen diario** (CSV):
+1. **📊 Dashboard Interactivo**:
 
-   - Compra total de energía (kWh)
-   - Inyección total a la red (kWh)
-   - Ahorro económico total (Bs)
-   - Porcentaje de ahorro vs. consumo base
+   - **Métricas principales**: Ahorro total, energía del equipo, energía inyectada/comprada
+   - **Gráfico de estado**: Visualización ON/OFF del equipo por horas (barras verdes/rojas)
+   - **Gráfico de ahorro**: Progresión del ahorro acumulado durante el día
+   - **Análisis comparativo**: Escenario sin optimización vs optimizado
+   - **Tabla resumen**: Todas las métricas organizadas y formateadas
+   - **Recomendaciones**: Consejos inteligentes basados en los resultados
+   - **Proyecciones**: Ahorro estimado diario, mensual y anual
 
 2. **Plan detallado** (Excel):
    - Estado horario del equipo (ON/OFF)
@@ -185,6 +196,7 @@ La aplicación genera:
 - **pandas**: Manipulación y análisis de datos
 - **openpyxl**: Lectura y escritura de archivos Excel
 - **pulp**: Solver de optimización lineal
+- **plotly**: Visualizaciones interactivas y gráficos dinámicos
 
 ## 📝 Desarrollo
 

@@ -6,6 +6,8 @@ from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, numbers
 from openpyxl.formatting.rule import CellIsRule, ColorScaleRule
 from pulp import LpProblem, LpMinimize, LpVariable, lpSum, PULP_CBC_CMD
 import base64
+import plotly.graph_objects as go
+import plotly.express as px
 
 def get_base64_image(image_path):
     """Convierte una imagen a base64 para usar en CSS"""
@@ -133,7 +135,7 @@ pot_w = st.number_input(
     "Potencia nominal (W)",
     min_value=1,
     max_value=20000,
-    value=50,
+    value=1500,
     key="input_power"
 )
 pot_kW = pot_w / 1000  # Definir pot_kW
@@ -287,6 +289,210 @@ if st.button("🚀 Calcular plan diario óptimo", key="btn_optimize"):
                     key=f"download_xlsx_{horas_min}_{fecha}")
 
         st.success("✅ Plan diario generado")
+        
+        # ============================================================================
+        # 6. DASHBOARD DE OPTIMIZACIÓN
+        # ============================================================================
+        
+        st.markdown("---")
+        st.header("📊 Dashboard de Optimización")
+        
+        # Calcular métricas clave
+        ahorro_final = plan["Ahorro acumulado (Bs)"].iloc[-1]
+        ahorro_pct_final = plan["Ahorro vs. Base (%)"].iloc[-1] * 100
+        
+        total_comprado = plan["Potencia comprada a la red (kW)"].sum()
+        total_inyectado = plan["Potencia inyectada a la red (kW)"].sum()
+        
+        horas_funcionamiento = plan["Estado equipo (0/1)"].sum()
+        energia_equipo = horas_funcionamiento * pot_kW
+        
+        costo_sin_equipo = costo_base
+        costo_con_equipo = costo_opt
+        
+        # Tarifa promedio
+        tarifa_compra_prom = df["Tarifa de compra (Bs / kWh)"].mean()
+        tarifa_venta_prom = df["Tarifa de venta (Bs / kWh)"].mean()
+        
+        # Ingresos por venta
+        ingresos_venta = (plan["Potencia inyectada a la red (kW)"] * 
+                         [df["Tarifa de venta (Bs / kWh)"][i] for i in range(24)]).sum()
+        
+        # Métricas principales en columnas
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                label="💰 Ahorro Total",
+                value=f"{ahorro_final:.2f} Bs",
+                delta=f"{ahorro_pct_final:.1f}% vs base"
+            )
+        
+        with col2:
+            st.metric(
+                label="⚡ Energía del Equipo",
+                value=f"{energia_equipo:.2f} kWh",
+                delta=f"{horas_funcionamiento:.0f} horas ON"
+            )
+        
+        with col3:
+            st.metric(
+                label="📈 Energía Inyectada",
+                value=f"{total_inyectado:.2f} kW",
+                delta=f"+{ingresos_venta:.2f} Bs"
+            )
+        
+        with col4:
+            st.metric(
+                label="📉 Energía Comprada",
+                value=f"{total_comprado:.2f} kW",
+                delta=f"-{(total_comprado * tarifa_compra_prom):.2f} Bs"
+            )
+        
+        # Gráfico de optimización por horas
+        st.subheader("⏰ Optimización por Intervalos Horarios")
+        
+        # Crear DataFrame para visualización
+        vis_data = plan.copy()
+        vis_data['Hora'] = [f"{i:02d}:00" for i in range(1, 25)]
+        vis_data['Costo Horario'] = [
+            df["Tarifa de compra (Bs / kWh)"][i] * plan["Potencia comprada a la red (kW)"].iloc[i] -
+            df["Tarifa de venta (Bs / kWh)"][i] * plan["Potencia inyectada a la red (kW)"].iloc[i]
+            for i in range(24)
+        ]
+        
+        fig_estado = go.Figure()
+        
+        # Barras para estado ON/OFF
+        colors = ['#2E8B57' if x == 1 else '#DC143C' for x in vis_data['Estado equipo (0/1)']]
+        
+        fig_estado.add_trace(go.Bar(
+            x=vis_data['Hora'],
+            y=vis_data['Estado equipo (0/1)'],
+            marker_color=colors,
+            name='Estado del Equipo',
+            text=['ON' if x == 1 else 'OFF' for x in vis_data['Estado equipo (0/1)']],
+            textposition='auto',
+        ))
+        
+        fig_estado.update_layout(
+            title=f"Estado Óptimo del Equipo: {nombre}",
+            xaxis_title="Hora del Día",
+            yaxis_title="Estado (0=OFF, 1=ON)",
+            showlegend=False,
+            height=400,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
+        )
+        
+        st.plotly_chart(fig_estado, use_container_width=True)
+        
+        # Gráfico de ahorro acumulado
+        fig_ahorro = go.Figure()
+        
+        fig_ahorro.add_trace(go.Scatter(
+            x=vis_data['Hora'],
+            y=vis_data['Ahorro acumulado (Bs)'],
+            mode='lines+markers',
+            line=dict(color='#FFD700', width=3),
+            marker=dict(size=6, color='#FFA500'),
+            name='Ahorro Acumulado',
+            fill='tozeroy',
+            fillcolor='rgba(255, 215, 0, 0.1)'
+        ))
+        
+        fig_ahorro.update_layout(
+            title="Progresión del Ahorro a lo Largo del Día",
+            xaxis_title="Hora del Día",
+            yaxis_title="Ahorro Acumulado (Bs)",
+            showlegend=False,
+            height=400,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
+        )
+        
+        st.plotly_chart(fig_ahorro, use_container_width=True)
+        
+        # Resumen de costos comparativo
+        st.subheader("💸 Análisis de Costos")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**🔴 Escenario Sin Optimización:**")
+            st.write(f"• Costo base: {costo_sin_equipo:.2f} Bs")
+            st.write(f"• Sin uso del equipo")
+            st.write(f"• Sin aprovechamiento solar")
+            
+        with col2:
+            st.markdown("**🟢 Escenario Optimizado:**")
+            st.write(f"• Costo total: {costo_con_equipo:.2f} Bs")
+            st.write(f"• Equipo funcionando {horas_funcionamiento} horas")
+            st.write(f"• Energía solar aprovechada: {total_inyectado:.2f} kW")
+            
+        # Tabla resumen
+        st.subheader("📋 Resumen Ejecutivo")
+        
+        resumen_data = {
+            "Métrica": [
+                "Ahorro Total (Bs)",
+                "Ahorro Porcentual (%)",
+                "Horas de Funcionamiento",
+                "Energía Consumida por Equipo (kWh)",
+                "Energía Comprada Total (kW)",
+                "Energía Inyectada Total (kW)",
+                "Ingresos por Venta (Bs)",
+                "Costo Sin Optimización (Bs)",
+                "Costo Con Optimización (Bs)"
+            ],
+            "Valor": [
+                f"{ahorro_final:.2f}",
+                f"{ahorro_pct_final:.1f}%",
+                f"{horas_funcionamiento:.0f}",
+                f"{energia_equipo:.2f}",
+                f"{total_comprado:.2f}",
+                f"{total_inyectado:.2f}",
+                f"{ingresos_venta:.2f}",
+                f"{costo_sin_equipo:.2f}",
+                f"{costo_con_equipo:.2f}"
+            ]
+        }
+        
+        resumen_df = pd.DataFrame(resumen_data)
+        st.dataframe(resumen_df, use_container_width=True, hide_index=True)
+        
+        # Recomendaciones
+        st.subheader("💡 Recomendaciones")
+        
+        if ahorro_final > 0:
+            st.success(f"✅ **Excelente optimización**: Estás ahorrando {ahorro_final:.2f} Bs ({ahorro_pct_final:.1f}%) al día")
+        else:
+            st.warning("⚠️ **Sin ahorro**: Considera ajustar los parámetros o revisar las tarifas")
+            
+        if total_inyectado > 0:
+            st.info(f"☀️ **Energía solar aprovechada**: {total_inyectado:.2f} kW generando {ingresos_venta:.2f} Bs")
+        else:
+            st.info("🌙 **Sin generación solar**: El plan se optimizó solo con tarifas de compra")
+            
+        if horas_funcionamiento == horas_min:
+            st.info(f"⏱️ **Funcionamiento mínimo**: El equipo opera exactamente {horas_min} horas como se requiere")
+        
+        # Proyección mensual
+        ahorro_mensual = ahorro_final * 30
+        ahorro_anual = ahorro_final * 365
+        
+        st.subheader("📈 Proyección de Ahorro")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Ahorro Diario", f"{ahorro_final:.2f} Bs")
+        with col2:
+            st.metric("Ahorro Mensual (est.)", f"{ahorro_mensual:.2f} Bs")
+        with col3:
+            st.metric("Ahorro Anual (est.)", f"{ahorro_anual:.2f} Bs")
 
 st.markdown("---")
 st.caption("© 2025 • Zapdos - Investigación Operativa I")
