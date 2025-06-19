@@ -1,4 +1,4 @@
-# ⚡ Zapdos Optimizer
+# ⚡ Zapdos 
 
 **Optimización Inteligente de Consumo Energético Diario**
 
@@ -25,7 +25,7 @@ Una aplicación web desarrollada con Streamlit para optimizar el uso de equipos 
 1. **Clona o descarga el repositorio**
 
    ```bash
-   git clone <url-del-repositorio>
+   git clone https://github.com/TantiE100/zapdos-io
    cd zapdos-io1
    ```
 
@@ -207,12 +207,6 @@ La aplicación genera:
 - Manejo de errores elegante
 - Exportación profesional a Excel
 - Métricas en tiempo real
-
-## 🤝 Contribuciones
-
-Este proyecto fue desarrollado como herramienta educativa. Las mejoras y sugerencias son bienvenidas.
-
----
 
 **© 2025 • Zapdos Optimizer**  
 _Desarrollado para Investigación Operativa I_  
