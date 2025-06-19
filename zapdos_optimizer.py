@@ -5,12 +5,78 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, numbers
 from openpyxl.formatting.rule import CellIsRule, ColorScaleRule
 from pulp import LpProblem, LpMinimize, LpVariable, lpSum, PULP_CBC_CMD
+import base64
+
+def get_base64_image(image_path):
+    """Convierte una imagen a base64 para usar en CSS"""
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except:
+        return None
 
 tmpl_dir     = "templates"
 diario_input = os.path.join(tmpl_dir, "diario_base.xlsx")
 plan_tmpl    = os.path.join(tmpl_dir, "plan_base.xlsx")
 
 st.set_page_config(page_title="Zapdos", page_icon="favicon.png", layout="centered")
+
+bg_image = get_base64_image("images/bg.jpg")
+if bg_image:
+    st.markdown(f"""
+    <style>
+        .stApp {{
+            background: linear-gradient(rgba(14, 17, 23, 0.75), rgba(14, 17, 23, 0.75)), 
+                        url('data:image/jpeg;base64,{bg_image}') center center;
+            background-size: cover;
+            background-attachment: fixed;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+     /* Mejorar legibilidad del texto */
+     .main .block-container {
+         background-color: rgba(14, 17, 23, 0.85);
+         border-radius: 15px;
+         padding: 2rem;
+         margin-top: 2rem;
+         backdrop-filter: blur(10px);
+         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+     }
+    
+    /* Estilo para títulos */
+    h1, h2, h3 {
+        color: #FFD700 !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
+    
+    /* Mejorar contraste en inputs */
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input {
+        background-color: rgba(38, 39, 48, 0.9) !important;
+        color: white !important;
+        border: 1px solid #FFD700 !important;
+    }
+    
+    /* Botones con estilo Team Instinct */
+    .stButton > button {
+        background: linear-gradient(45deg, #FFD700, #FFA500) !important;
+        color: black !important;
+        font-weight: bold !important;
+        border: none !important;
+        box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3) !important;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(45deg, #FFA500, #FFD700) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5) !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("⚡ Zapdos — Plan Diario")
 
 # 1. Descarga plantilla diaria
